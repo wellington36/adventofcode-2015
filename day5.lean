@@ -40,9 +40,12 @@ def count_nice_strings (ss : List String) : Nat :=
 
 -- Part 2:
 def pairs_of_chairs : List Char -> List (List Char)
-  | [] => [[]]
-  | [_] => [[]]
-  | c1 :: c2 :: cs => [c1, c2] :: (pairs_of_chairs <| c2 :: cs)
+  | [] => []
+  | [_] => []
+  | [c1, c2] => [[c1, c2]]
+  | c1 :: c2 :: c3 :: cs => if c1 ≠ c2 ∨ c2 ≠ c3
+    then [c1, c2] :: pairs_of_chairs (c2 :: c3 :: cs)
+    else pairs_of_chairs (c2 :: c3 :: cs)
 
 def check_replication : List (List Char) -> Bool
   | [] => false
@@ -65,8 +68,5 @@ def is_nice₂ (s : String) : Bool :=
 
 def count_nice_strings₂ (ss : List String) : Nat :=
   ss.foldl (λ acc s => if is_nice₂ s then acc + 1 else acc) 0
-
-
-
 
 #eval count_nice_strings₂ input_task
