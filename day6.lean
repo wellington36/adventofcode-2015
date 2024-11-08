@@ -8,8 +8,7 @@ def split_by_new_line (s : String) : List String :=
 
 def input_task := split_by_new_line input_day6
 
-def test_input := ["toggle 489,959 through 759,964", "turn off 820,516 through 871,914", "turn off 427,423 through 929,502"]
-
+-- Part 1
 -- Define the grid as a list of lists of booleans, where each inner list represents a row of lights.
 def initial_grid : List (List Bool) :=
   List.replicate 1000 (List.replicate 1000 false)
@@ -40,27 +39,48 @@ def solve (instructions : List (String × Nat × Nat × Nat × Nat)) : Nat :=
   count_lights final_grid
 
 def parse_instruction (instr : String) : (String × Nat × Nat × Nat × Nat) :=
-  let parts := instr.splitOn " through "
-  let cmd := parts.head! -- Get the command part
-  let range := parts.tail!.head! -- Get the range part
-  let coordinates := cmd.splitOn " " -- Split the command to get the action
-  let action := (coordinates.head! ++ " " ++ coordinates.tail!.head!) -- The action (e.g., "turn on")
-  let coord_parts := coordinates.tail! -- The rest should contain the starting coordinates
-  let start_coords := coord_parts.head!.splitOn "," -- Split by comma
-  let end_coords := range.splitOn "," -- Split the range by comma
-
-  -- Convert strings to Nat
-  let x1 := String.toNat! start_coords.head!
-  let y1 := String.toNat! start_coords.tail!.head!
-  let x2 := String.toNat! end_coords.head!
-  let y2 := String.toNat! end_coords.tail!.head!
-
-  (action, x1, y1, x2, y2)
+  let parts := instr.splitOn " "
+  match parts with
+  | ["turn", "on", x1, ",", y1, "through", x2, ",", y2] =>
+      ("turn on", x1.toNat!, y1.toNat!, x2.toNat!, y2.toNat!)
+  | ["turn", "off", x1, ",", y1, "through", x2, ",", y2] =>
+      ("turn off", x1.toNat!, y1.toNat!, x2.toNat!, y2.toNat!)
+  | ["toggle", x1, ",", y1, "through", x2, ",", y2] =>
+      ("toggle", x1.toNat!, y1.toNat!, x2.toNat!, y2.toNat!)
+  | _ => ("", 0, 0, 0, 0)  -- Handle unexpected formats
 
 
 -- Convert the example_instructions to a list of parsed tuples
 def parsed_instructions : List (String × Nat × Nat × Nat × Nat) :=
-  test_input.map parse_instruction
+  (input_task.map (λ s => s.replace "," " , ")).map parse_instruction
 
 -- Example usage with a list of instructions
-#eval parsed_instructions
+#eval solve parsed_instructions
+
+-- Part 2:
+def initial_grid₂ : List (List Nat) :=
+  List.replicate 1000 (List.replicate 1000 0)
+
+def count_brightness (grid : List (List Nat)) : Nat :=
+  grid.foldl (λ acc row => acc + row.foldl (λ acc2 light => acc2 + light) 0) 0
+
+def apply_action₂ (grid : List (List Nat)) (action : String) (x1 y1 x2 y2 : Nat) : List (List Nat) :=
+  grid.enum.map (λ ⟨i, row⟩ =>
+    if x1 ≤ i ∧ i ≤ x2 then
+      row.enum.map (λ ⟨j, light⟩ =>
+        if y1 ≤ j ∧ j ≤ y2 then
+          match action with
+          | "turn on"  => light + 1
+          | "turn off" => light - 1
+          | "toggle"   => light + 2
+          | _          => light  -- Default case, should not occur
+        else light)
+    else row)
+
+def solve₂ (instructions : List (String × Nat × Nat × Nat × Nat)) : Nat :=
+  let
+    final_grid := instructions.foldl (λ grid instruction =>
+      apply_action₂ grid instruction.1 instruction.2.1 instruction.2.2.1 instruction.2.2.2.1 instruction.2.2.2.2) initial_grid₂
+  count_brightness final_grid
+
+#eval solve₂ parsed_instructions
